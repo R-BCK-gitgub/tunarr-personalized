@@ -52,12 +52,19 @@ export type SettingsState = z.infer<typeof SettingsStateSchema>;
 
 export type PersistedSettingsState = DeepPartial<SettingsState>;
 
-// By default, the dev environment runs its web server on port
-// 5173. In 'prod' we assume that by default the user wants
-// their web UI to hit their self-hosted instance of Tunarr,
-// which will be on the same host/port.
+// In development the browser talks to the Vite server itself. Vite proxies
+// backend routes to Tunarr on port 8000 (see vite.config.ts). Keeping requests
+// same-origin makes local development and GitHub Codespaces work without
+// hard-coded forwarded-port URLs or CORS/authentication workarounds.
+function getDevelopmentBackendUri(): string {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return 'http://localhost:5173';
+}
+
 export const DefaultBackendUri = import.meta.env.DEV
-  ? 'http://localhost:8000'
+  ? getDevelopmentBackendUri()
   : '';
 
 export const createSettingsSlice: StateCreator<SettingsState> = () => ({

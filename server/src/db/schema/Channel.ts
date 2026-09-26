@@ -1,5 +1,6 @@
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 import { inArray, relations } from 'drizzle-orm';
+import type { PersonalizedPlaybackConfig } from '@tunarr/types';
 import {
   check,
   getTableConfig,
@@ -40,6 +41,7 @@ export const Channel = sqliteTable(
     name: text().notNull(),
     number: integer().notNull().unique(),
     offline: text({ mode: 'json' }).$type<ChannelOfflineSettings>().notNull(),
+    personalizedPlayback: text({ mode: 'json' }).$type<PersonalizedPlaybackConfig>(),
     startTime: integer().notNull(),
     stealth: integer({ mode: 'boolean' }).default(false),
     streamMode: text({ enum: ChannelStreamModes }).default('hls').notNull(),

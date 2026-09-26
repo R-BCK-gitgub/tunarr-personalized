@@ -22,6 +22,7 @@ import { makeLocalUrl } from '@/util/serverUtil.js';
 import throttle from '@/util/throttle.js';
 import constants from '@tunarr/shared/constants';
 import { seq } from '@tunarr/shared/util';
+import { usesSeriesOnlyGuide } from '@tunarr/types';
 import type {
   ChannelIcon,
   ChannelLineup,
@@ -1381,7 +1382,17 @@ export class TVGuideService {
               ? channel.guideFlexTitle
               : channel.name,
           )
-          .with({ type: 'program' }, (p) => p.program.title)
+          .with({ type: 'program' }, (p) => {
+            if (
+              p.program.type === 'episode' &&
+              usesSeriesOnlyGuide(
+                channel.personalizedPlayback?.strategy ?? 'normal',
+              )
+            ) {
+              return p.program.show?.title ?? p.program.showTitle ?? channel.name;
+            }
+            return p.program.title;
+          })
           .exhaustive();
         if (isPaused) {
           title += ' (paused)';
@@ -1451,6 +1462,7 @@ export class TVGuideService {
         soundtrack: undefined,
         mode: 'pic',
       },
+      personalizedPlayback: null,
       guideFlexTitle: null,
       createdAt: +dayjs(),
       updatedAt: +dayjs(),

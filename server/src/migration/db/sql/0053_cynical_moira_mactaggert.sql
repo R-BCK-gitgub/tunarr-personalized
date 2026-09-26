@@ -1,0 +1,1 @@
+ALTER TABLE `channel` ADD `personalized_playback` text;

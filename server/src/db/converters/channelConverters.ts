@@ -1,4 +1,5 @@
 import { DefaultChannelIcon } from '@/db/schema/base.js';
+import { PersonalizedPlaybackConfigSchema } from '@tunarr/types';
 import type { Channel, SubtitlePreference } from '@tunarr/types';
 import { filter, orderBy } from 'lodash-es';
 import type { MarkRequired } from 'ts-essentials';
@@ -57,6 +58,9 @@ export const dbChannelToApiChannel = ({
     onDemand: {
       enabled: isDefined(lineup.onDemandConfig),
     },
+    personalizedPlayback: PersonalizedPlaybackConfigSchema.parse(
+      channel.personalizedPlayback ?? {},
+    ),
     programCount: filter(lineup.items, { type: 'content' }).length,
     streamMode: channel.streamMode,
     transcodeConfigId: channel.transcodeConfigId,
@@ -110,6 +114,9 @@ export const ormChannelToApiChannel = ({
     onDemand: {
       enabled: isDefined(lineup.onDemandConfig),
     },
+    personalizedPlayback: PersonalizedPlaybackConfigSchema.parse(
+      channel.personalizedPlayback ?? {},
+    ),
     programCount: filter(lineup.items, { type: 'content' }).length,
     streamMode: channel.streamMode,
     transcodeConfigId: channel.transcodeConfigId,

@@ -27,6 +27,7 @@ import type { IProgramDB } from '../db/interfaces/IProgramDB.ts';
 import { ProgramPlayHistoryDB } from '../db/ProgramPlayHistoryDB.ts';
 import { OneWeekMillis } from '../ffmpeg/builder/constants.ts';
 import type { IFillerPicker } from '../services/interfaces/IFillerPicker.ts';
+import { PersonalizedPlaybackService } from '../services/PersonalizedPlaybackService.ts';
 import { WrappedError } from '../types/errors.ts';
 import { devAssert } from '../util/debug.ts';
 import { isNonEmptyString } from '../util/index.js';
@@ -84,6 +85,8 @@ export class StreamProgramCalculator {
     private fillerPicker: IFillerPicker,
     @inject(ProgramPlayHistoryDB)
     private programPlayHistoryDB: ProgramPlayHistoryDB,
+    @inject(PersonalizedPlaybackService)
+    private personalizedPlaybackService: PersonalizedPlaybackService,
   ) {}
 
   async getCurrentLineupItem(
@@ -176,6 +179,26 @@ export class StreamProgramCalculator {
     }
 
     if (!lineupItem) {
+      if (
+        channelContext.uuid === channel.uuid &&
+        currentProgram.program.type === 'program'
+      ) {
+        currentProgram = await this.personalizedPlaybackService.resolve(
+          channel,
+          currentProgram,
+          req.startTime,
+        );
+        if (currentProgram.program.type === 'program') {
+          const selectedRemaining =
+            currentProgram.program.program.duration -
+            (currentProgram.program.startOffset ?? 0) -
+            currentProgram.timeElapsed;
+          if (selectedRemaining > 0) {
+            streamDuration = Math.min(streamDuration, selectedRemaining);
+          }
+        }
+      }
+
       if (isNil(currentProgram)) {
         return Result.failure(
           new StreamProgramCalculatorError(

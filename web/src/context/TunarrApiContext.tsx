@@ -1,5 +1,4 @@
 import { type QueryClient } from '@tanstack/react-query';
-import { isUndefined } from 'lodash-es';
 import { type ReactNode, createContext, useEffect } from 'react';
 import { client } from '../generated/client.gen.ts';
 import { createClient } from '../generated/client/client.gen.ts';
@@ -38,11 +37,8 @@ export function TunarrApiProvider({
 
   useEffect(() => {
     // Only do this if something actually changed
-    if (
-      (backendUri.length === 0 &&
-        !isUndefined(apiClient.getConfig().baseURL)) ||
-      (backendUri.length > 0 && isUndefined(apiClient.getConfig().baseURL))
-    ) {
+    const currentBaseUrl = apiClient.getConfig().baseURL ?? '';
+    if (currentBaseUrl !== backendUri) {
       apiClient = createClient({ baseURL: backendUri });
       client.setConfig({ baseURL: backendUri });
     }

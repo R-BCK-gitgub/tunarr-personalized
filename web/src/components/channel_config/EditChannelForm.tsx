@@ -8,6 +8,7 @@ import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import { DEFAULT_PERSONALIZED_PLAYBACK_CONFIG } from '@tunarr/types';
 import type {
   Channel,
   SaveableChannel,
@@ -29,6 +30,7 @@ import { useUpdateChannel } from '../../hooks/useUpdateChannel.ts';
 import ChannelEditActions from './ChannelEditActions.tsx';
 import ChannelEpgConfig from './ChannelEpgConfig.tsx';
 import { ChannelFlexConfig } from './ChannelFlexConfig.tsx';
+import { ChannelPlaybackConfig } from './ChannelPlaybackConfig.tsx';
 import { ChannelPropertiesEditor } from './ChannelPropertiesEditor.tsx';
 import ChannelTranscodingConfig from './ChannelTranscodingConfig.tsx';
 import {
@@ -85,6 +87,10 @@ function getDefaultFormValues(channel: Channel): DeepRequired<SaveableChannel> {
     onDemand: {
       enabled: channel.onDemand.enabled,
     },
+    personalizedPlayback: {
+      ...DEFAULT_PERSONALIZED_PLAYBACK_CONFIG,
+      ...(channel.personalizedPlayback ?? {}),
+    },
     subtitlesEnabled: channel.subtitlesEnabled,
     subtitlePreferences: channel.subtitlePreferences ?? [],
   };
@@ -115,6 +121,11 @@ const EditChannelTabsProps: EditChannelTabProps[] = [
       'subtitlesEnabled',
       'subtitlePreferences',
     ],
+  },
+  {
+    value: 'playback',
+    description: 'Playback',
+    fields: ['personalizedPlayback'],
   },
 ];
 
@@ -246,6 +257,7 @@ export function EditChannelForm({
     Flex: t`Flex`,
     EPG: t`EPG`,
     Streaming: t`Streaming`,
+    Playback: t`Playback`,
   };
 
   const renderTab = (tab: EditChannelTabProps) => {
@@ -297,6 +309,9 @@ export function EditChannelForm({
           </EditChannelTabPanel>
           <EditChannelTabPanel value="ffmpeg" currentValue={currentTab}>
             <ChannelTranscodingConfig />
+          </EditChannelTabPanel>
+          <EditChannelTabPanel value="playback" currentValue={currentTab}>
+            <ChannelPlaybackConfig />
           </EditChannelTabPanel>
           <ChannelEditActions isNewChannel={isNew} />
         </Box>

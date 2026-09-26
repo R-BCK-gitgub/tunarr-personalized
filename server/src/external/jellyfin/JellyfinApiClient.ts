@@ -39,6 +39,7 @@ import {
   JellyfinAuthenticationResult,
   JellyfinLibraryItemsResponse,
   JellyfinSystemInfo,
+  JellyfinUserResponse,
   JellyfinVirtualFolderResponse,
 } from '@tunarr/types/jellyfin';
 import type { AxiosRequestConfig } from 'axios';
@@ -285,6 +286,10 @@ export class JellyfinApiClient extends MediaSourceApiClient<JellyfinItemTypes> {
 
   async getSystemInfo() {
     return this.doTypeCheckedGet('/System/Info', JellyfinSystemInfo);
+  }
+
+  async getUsers() {
+    return this.doTypeCheckedGet('/Users', JellyfinUserResponse.array());
   }
 
   async getUserLibraries(): Promise<QueryResult<Library[]>> {
@@ -988,7 +993,11 @@ export class JellyfinApiClient extends MediaSourceApiClient<JellyfinItemTypes> {
     }
   }
 
-  async recordPlaybackStart(itemId: string, deviceId: string) {
+  async recordPlaybackStart(
+    itemId: string,
+    deviceId: string,
+    positionMs: number = 0,
+  ) {
     return this.doPost({
       url: '/Sessions/Playing',
       params: {
@@ -1003,7 +1012,7 @@ export class JellyfinApiClient extends MediaSourceApiClient<JellyfinItemTypes> {
       data: {
         ItemId: itemId,
         PlayMethod: 'DirectStream',
-        PositionTicks: 0,
+        PositionTicks: Math.max(0, positionMs) * 10000,
         CanSeek: false,
       },
     });
@@ -1017,6 +1026,15 @@ export class JellyfinApiClient extends MediaSourceApiClient<JellyfinItemTypes> {
       },
       data: {
         PlaybackPositionTicks: elapsedMs * 10000,
+      },
+    });
+  }
+
+  async markItemPlayed(itemId: string) {
+    return this.doPost({
+      url: `/UserPlayedItems/${itemId}`,
+      params: {
+        userId: this.options.mediaSource.userId,
       },
     });
   }

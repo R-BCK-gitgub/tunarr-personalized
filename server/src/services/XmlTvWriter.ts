@@ -1,4 +1,5 @@
 import type { SettingsDB } from '@/db/SettingsDB.js';
+import { usesSeriesOnlyGuide } from '@tunarr/types';
 import type { ChannelOrm } from '@/db/schema/Channel.js';
 import { KEYS } from '@/types/inject.js';
 import { getChannelId } from '@/util/channels.js';
@@ -109,7 +110,7 @@ export class XmlTvWriter {
       ),
       programmes: flatMap(channels, ({ channel, programs }) =>
         map(programs, (p) =>
-          this.makeXmlTvProgram(p, xmlChannelIdById[channel.uuid]!),
+          this.makeXmlTvProgram(p, xmlChannelIdById[channel.uuid]!, channel),
         ),
       ),
     } satisfies Xmltv;
@@ -153,7 +154,11 @@ export class XmlTvWriter {
   private makeXmlTvProgram(
     guideItem: MaterializedGuideItem,
     xmlChannelId: string,
+    channel: ChannelOrm,
   ): XmltvProgramme {
+    const seriesOnlyGuide = usesSeriesOnlyGuide(
+      channel.personalizedPlayback?.strategy ?? 'normal',
+    );
     const title = match(guideItem)
       .with(
         { programming: { type: 'program' } },
@@ -182,7 +187,7 @@ export class XmlTvWriter {
 
     const subTitle = match(guideItem.programming)
       .with({ type: 'program', program: { type: 'episode' } }, ({ program }) =>
-        program.title === title ? undefined : program.title,
+        seriesOnlyGuide || program.title === title ? undefined : program.title,
       )
       .with(
         { type: 'program', program: { type: 'track' } },
@@ -214,7 +219,11 @@ export class XmlTvWriter {
 
     if (guideItem.programming.type === 'program') {
       const program = guideItem.programming.program;
-      if (program.type !== 'movie' && title !== guideItem.title) {
+      if (
+        !seriesOnlyGuide &&
+        program.type !== 'movie' &&
+        title !== guideItem.title
+      ) {
         partial.subTitle ??= [
           {
             _value: escape(guideItem.title),
@@ -222,9 +231,11 @@ export class XmlTvWriter {
         ];
       }
 
-      const desc = compact([program.summary, program.plot]).find(
-        isNonEmptyString,
-      );
+      const desc = compact(
+        seriesOnlyGuide && program.type === 'episode'
+          ? [program.show?.summary, program.show?.plot]
+          : [program.summary, program.plot],
+      ).find(isNonEmptyString);
 
       if (desc) {
         partial.desc ??= [
@@ -272,7 +283,10 @@ export class XmlTvWriter {
         });
       }
 
-      const airDate = parseAirDate(program.originalAirDate);
+      const airDate =
+        seriesOnlyGuide && program.type === 'episode'
+          ? undefined
+          : parseAirDate(program.originalAirDate);
       if (airDate) {
         partial.date ??= airDate.toDate();
       }
@@ -322,7 +336,7 @@ export class XmlTvWriter {
         .otherwise(() => [null, null]);
 
       partial.episodeNum = [];
-      if (!isNil(episodeNumber)) {
+      if (!seriesOnlyGuide && !isNil(episodeNumber)) {
         const seasonString = isNil(seasonNumber)
           ? ''
           : `S${seasonNumber.toString().padStart(2, '0')}`;
@@ -338,7 +352,7 @@ export class XmlTvWriter {
       // where indexes are 0-based and each portion is optional if unknown
       // we don't have part information right now so we always omit it
       // we also omit the season number for season 0 as that is used for specials which don't have a valid representation in this format
-      if (episodeNumber || seasonNumber) {
+      if (!seriesOnlyGuide && (episodeNumber || seasonNumber)) {
         partial.episodeNum.push({
           system: 'xmltv_ns',
           _value: `${seasonNumber ? seasonNumber - 1 : ''}.${episodeNumber ? episodeNumber - 1 : ''}.`,

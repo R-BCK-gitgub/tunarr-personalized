@@ -99,7 +99,7 @@ export class UpdateJellyfinPlayStatusScheduledTask extends ScheduledTask<
     this.playState = 'stopped';
     GlobalScheduler.scheduleOneOffTask(
       UpdateJellyfinPlayStatusTask.name,
-      dayjs().add(30, 'seconds').toDate(),
+      dayjs().add(1, 'second').toDate(),
       this.getInvocationArgs(),
       this.getNextTask(),
     );
@@ -112,10 +112,6 @@ export class UpdateJellyfinPlayStatusScheduledTask extends ScheduledTask<
       sessionId: this.sessionId,
       first: this.first,
       elapsedMs: dayjs.duration(dayjs().diff(this.start)).asMilliseconds(),
-      itemStartPositionMs: Math.min(
-        this.request.itemStartPositionMs + 30000,
-        this.request.itemDuration,
-      ),
     };
     if (this.first) {
       this.first = false;
@@ -124,18 +120,10 @@ export class UpdateJellyfinPlayStatusScheduledTask extends ScheduledTask<
   }
 
   private getNextTask(): UpdateJellyfinPlayStatusTask {
-    const task = new UpdateJellyfinPlayStatusTask(
+    return new UpdateJellyfinPlayStatusTask(
       this.jellyfinServer,
       this.mediaSourceApiFactory,
     );
-
-    this.request = this.getInvocationArgs();
-
-    if (this.first) {
-      this.first = false;
-    }
-
-    return task;
   }
 }
 
@@ -167,24 +155,38 @@ class UpdateJellyfinPlayStatusTask extends Task2<
       );
 
     const deviceName = `tunarr-channel-${request.channelNumber}`;
+    const positionMs = Math.min(
+      request.itemStartPositionMs + request.elapsedMs,
+      request.itemDuration,
+    );
     try {
       if (request.first) {
-        await jellyfin.recordPlaybackStart(request.itemId, deviceName);
-      } else if (request.playState === 'playing') {
-        await jellyfin.recordPlaybackProgress(
+        await jellyfin.recordPlaybackStart(
           request.itemId,
-          request.elapsedMs,
           deviceName,
+          positionMs,
         );
       } else {
         await jellyfin.recordPlaybackProgress(
           request.itemId,
-          request.elapsedMs,
+          positionMs,
           deviceName,
+          request.playState === 'stopped',
         );
       }
 
-      await jellyfin.updateUserItemPlayback(request.itemId, request.elapsedMs);
+      await jellyfin.updateUserItemPlayback(request.itemId, positionMs);
+
+      const watchedThresholdMs = Math.min(
+        request.itemDuration * 0.95,
+        Math.max(0, request.itemDuration - 30_000),
+      );
+      if (
+        request.playState === 'stopped' &&
+        positionMs >= watchedThresholdMs
+      ) {
+        await jellyfin.markItemPlayed(request.itemId);
+      }
     } catch (error) {
       this.logger.warn(
         error,

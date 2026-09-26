@@ -18,6 +18,7 @@ import {
   type PersistedSettingsState,
   type SettingsState,
   SettingsStateInternalSchema,
+  DefaultBackendUri,
   createSettingsSlice,
 } from './settings/store.ts';
 import type { ThemeEditorStateInner } from './themeEditor/store.ts';
@@ -85,6 +86,19 @@ const useStore = create<State>()(
                 );
               } else {
                 parsedSettings = result.data;
+                // Older development builds stored either localhost:8000 or a
+                // Codespaces :8000 forwarded URL. Development now uses Vite's
+                // same-origin proxy, so transparently migrate those old defaults.
+                if (import.meta.env.DEV) {
+                  const oldDevBackend =
+                    parsedSettings.backendUri === 'http://localhost:8000' ||
+                    /-8000\.app\.github\.dev$/.test(
+                      parsedSettings.backendUri,
+                    );
+                  if (oldDevBackend) {
+                    parsedSettings.backendUri = DefaultBackendUri;
+                  }
+                }
                 // TODO: provide way to convert to the next version
               }
             }

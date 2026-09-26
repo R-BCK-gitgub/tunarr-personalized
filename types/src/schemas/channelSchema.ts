@@ -8,6 +8,7 @@ import {
   ContentProgramTypeSchema,
   StrictChannelIconSchema,
 } from './utilSchemas.js';
+import { PersonalizedPlaybackConfigSchema } from '../PersonalizedPlayback.js';
 
 export const WatermarkSchema = z.object({
   url: z.string().optional(),
@@ -177,6 +178,7 @@ export const ChannelSchema = z.object({
   onDemand: z.object({
     enabled: z.boolean(),
   }),
+  personalizedPlayback: PersonalizedPlaybackConfigSchema.optional(),
   programCount: z.number(),
   streamMode: ChannelStreamModeSchema,
   transcodeConfigId: z.uuid(),

@@ -231,6 +231,19 @@ export const JellyfinUserResponse = z.object({
 
 export type JellyfinUserResponse = z.infer<typeof JellyfinUserResponse>;
 
+
+export const JellyfinUserItemData = z.object({
+  PlaybackPositionTicks: z.number().int().nonnegative().optional().default(0),
+  PlayCount: z.number().int().nonnegative().optional().default(0),
+  IsFavorite: z.boolean().optional().default(false),
+  Played: z.boolean().optional().default(false),
+  LastPlayedDate: z.string().nullable().optional(),
+  Key: z.string().nullable().optional(),
+  ItemId: z.string().nullable().optional(),
+});
+
+export type JellyfinUserItemData = z.infer<typeof JellyfinUserItemData>;
+
 export const JellyfinLibraryPathInfo = z.object({
   Path: z.string(),
   NetworkPath: z.string().nullable().optional(),
@@ -723,7 +736,7 @@ export const JellyfinItem = z.object({
   ParentBackdropItemId: z.string().nullable().optional(),
   ParentBackdropImageTags: z.array(z.string()).nullable().optional(),
   LocalTrailerCount: z.number().int().nullable().optional(),
-  // UserData: UserItemDataDto.nullable().optional(),
+  UserData: JellyfinUserItemData.nullable().optional(),
   RecursiveItemCount: z.number().int().nullable().optional(),
   ChildCount: z.number().int().nullable().optional(),
   SeriesName: z.string().nullable().optional(),

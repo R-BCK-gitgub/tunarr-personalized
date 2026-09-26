@@ -14,6 +14,7 @@ import { calculateStartTimeOffsets } from '../db/lineupUtil.ts';
 import { ProgramPlayHistoryDB } from '../db/ProgramPlayHistoryDB.ts';
 import { MediaSourceId } from '../db/schema/base.ts';
 import { IFillerPicker } from '../services/interfaces/IFillerPicker.ts';
+import { PersonalizedPlaybackService } from '../services/PersonalizedPlaybackService.ts';
 import {
   createChannelOrm,
   createFakeProgram,
@@ -22,6 +23,14 @@ import {
   calculateStreamDuration,
   StreamProgramCalculator,
 } from './StreamProgramCalculator.ts';
+
+function passthroughPersonalizedPlaybackService(): PersonalizedPlaybackService {
+  const service = mock<PersonalizedPlaybackService>();
+  when(service.resolve(anything(), anything(), anything())).thenCall(
+    (_channel, scheduled) => Promise.resolve(scheduled),
+  );
+  return instance(service);
+}
 
 describe('StreamProgramCalculator', () => {
   baseTest('getCurrentLineupItem simple', async () => {
@@ -105,6 +114,7 @@ describe('StreamProgramCalculator', () => {
       instance(programDB),
       instance(fillerPicker),
       instance(playHistoryDB),
+      passthroughPersonalizedPlaybackService(),
     );
 
     const out = (
@@ -221,6 +231,7 @@ describe('StreamProgramCalculator', () => {
       instance(programDB),
       instance(fillerPicker),
       instance(playHistoryDB),
+      passthroughPersonalizedPlaybackService(),
     );
 
     const out = (
@@ -339,6 +350,7 @@ describe('StreamProgramCalculator', () => {
       instance(programDB),
       instance(fillerPicker),
       instance(playHistoryDB),
+      passthroughPersonalizedPlaybackService(),
     );
 
     const out = (
@@ -454,6 +466,7 @@ describe('StreamProgramCalculator', () => {
       instance(programDB),
       instance(fillerPicker),
       instance(playHistoryDB),
+      passthroughPersonalizedPlaybackService(),
     );
 
     await calc.getCurrentLineupItem({
@@ -558,6 +571,7 @@ describe('StreamProgramCalculator', () => {
         instance(programDB),
         instance(fillerPicker),
         instance(playHistoryDB),
+        passthroughPersonalizedPlaybackService(),
       );
 
       await calc.getCurrentLineupItem({
@@ -678,6 +692,7 @@ describe('StreamProgramCalculator', () => {
         instance(programDB),
         instance(fillerPicker),
         instance(playHistoryDB),
+        passthroughPersonalizedPlaybackService(),
       );
 
       const out = (

@@ -15,6 +15,7 @@ import {
   JellyfinItemKind,
   JellyfinItemSortBy,
   JellyfinLibraryItemsResponse,
+  JellyfinUserResponse,
 } from '@tunarr/types/jellyfin';
 import { ItemOrFolder, Library as LibrarySchema } from '@tunarr/types/schemas';
 import type { FastifyReply } from 'fastify/types/reply.js';
@@ -99,6 +100,31 @@ export const jellyfinApiRouter: RouterPluginCallback = (fastify, _, done) => {
         return res.status(502).send({ reason: classifyUpstreamError(e) });
       }
     },
+  );
+
+  fastify.get(
+    '/jellyfin/:mediaSourceId/users',
+    {
+      schema: {
+        params: mediaSourceParams,
+        response: {
+          200: z.array(JellyfinUserResponse),
+        },
+        operationId: 'getJellyfinUsers',
+      },
+    },
+    (req, res) =>
+      withJellyfinMediaSource(req, res, async (mediaSource) => {
+        const api =
+          await req.serverCtx.mediaSourceApiFactory.getJellyfinApiClientForMediaSource(
+            mediaSource,
+          );
+        const response = await api.getUsers();
+        if (response.isFailure()) {
+          throw response.error;
+        }
+        return res.send(response.get());
+      }),
   );
 
   fastify.get(

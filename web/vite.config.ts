@@ -62,5 +62,19 @@ export default defineConfig({
   },
   server: {
     host: true, // process.env['TUNARR_BIND_ADDR'] ?? 'localhost',
+    proxy: {
+      '/api': {
+        target: process.env.TUNARR_DEV_API_URL ?? 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+      '/stream': {
+        target: process.env.TUNARR_DEV_API_URL ?? 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+      '/images': {
+        target: process.env.TUNARR_DEV_API_URL ?? 'http://127.0.0.1:8000',
+        changeOrigin: true,
+      },
+    },
   },
 });
